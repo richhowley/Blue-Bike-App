@@ -51,15 +51,20 @@ Future<Response> fetchInfo(String url) async {
   return retVal;
 }
 
-List _bikeStationList;      // list of Blue Bike stations
-Set _validRegions;         // regions with bikes
+List _bikeStationList = null;       // list of Blue Bike stations
+Set _validRegions = null;           // regions with bikes
+List _systemStatus;                 // real-time station status
+Map _availableBikes = Map();        // available bike count keyed by station id
 
   // row for bike station list
   Widget _buildBikeRow(BuildContext context, var station) {
   return ListTile(
     title: Text(station['name'], style: TextStyle(fontSize: 18.0)),
-    trailing: Text(station['capacity'].toString(),
-                style: TextStyle(fontSize: 16.0, color:Colors.indigo))
+    trailing:
+
+    Text(_availableBikes[station['station_id']].toString() + ' / ' + station['capacity'].toString(),
+        style: TextStyle(fontSize: 16.0, color:Colors.indigo))
+
   );
 
 }
@@ -68,19 +73,25 @@ Set _validRegions;         // regions with bikes
 Widget _bikeLocationsBuilder(BuildContext context) {
   return
     Consumer<FilteredStations>(
-    builder: (context, filter, child) =>
-        ListView.builder(
-          itemCount: filter.bikeList.length,
-          padding: EdgeInsets.all(16.0),
-          itemBuilder: (context, i) {
-            return(Card(
-                elevation: 3,
-                child:_buildBikeRow(context, filter.bikeList[i]))
-        );
-      }
-    ),
+      builder: (context, filter, child) =>
+          ListView.builder(
+            itemCount: filter.bikeList.length,
+            padding: EdgeInsets.all(16.0),
+            itemBuilder: (context, i) {
+              return(Card(
+                  elevation: 3,
+                  child:_buildBikeRow(context, filter.bikeList[i])
+              )
+          );
+        }
+      ),
   );
 }
+
+// RegionList
+//
+// Handles screen for choosing regions
+//
 
 class RegionList extends StatefulWidget {
   RegionList({Key key}) : super(key: key);
@@ -173,53 +184,17 @@ class _BikeStationListState extends State<BikeStationList>
   // of bike list based on region
   //
   void _filterRegions() {
-    final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
+
+    final RegionList _regionPicker = RegionList();
 
     Navigator.of(context).push(
 
       MaterialPageRoute<void>(
 
           builder: (BuildContext context) {
-
-              bool _val = false;
-
-              Iterable<CheckboxListTile> tiles = _validRegions.map(
-                    (region) {
-
-                  return CheckboxListTile(
-                    title: Text(
-                      region['name'],
-                      style: _biggerFont,
-                    ),
-
-                    value: true,
-                      onChanged:(val){
-                        setState(() {print(_val);
-                          _val = true;
-                        });
-                    }
-                  );
-                },
-              );
-
-               List<Widget> divided = ListTile
-                  .divideTiles(
-                context: context,
-                tiles: tiles,
-              )
-                  .toList();
-
-              return RegionList();
-                /*
-                Scaffold(
-                appBar: AppBar(
-                  title: Text("Select Regions"),
-                ),
-                body: RegionList() //ListView(children: divided),
-
-              );*/
-
+              return _regionPicker;
           },
+
         )
     );
   }
@@ -248,6 +223,14 @@ class _BikeStationListState extends State<BikeStationList>
     url = _feeds.where((f) => f['name'] == 'system_regions').toList()[0]['url'];
     final Response regionData = await fetchInfo(url);
     _systemRegions = new List.from(regionData.data['data']['regions']);
+
+    // get station status
+    url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
+    final Response statusData = await fetchInfo(url);
+    _systemStatus = new List.from(statusData.data['data']['stations']);
+
+    // make a map of available bikes, key is staton id
+    for( var s in _systemStatus ) _availableBikes[s['station_id']] = s['num_bikes_available'];
 
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
@@ -303,6 +286,10 @@ class _BikeStationListState extends State<BikeStationList>
     _sList = getStations(context);
   }
 
+  // Home screen is built with a FutureBuilder
+  // so we can show a loading message while
+  // reading from server
+
   Widget build(BuildContext context) {
     return FutureBuilder<List>(
       future: _sList,
@@ -351,7 +338,7 @@ class _BikeStationListState extends State<BikeStationList>
           appBar: AppBar (
             title: Text('Blue Bikes'),
             actions: <Widget>[
-              IconButton(icon: Icon(Icons.list), onPressed:_filterRegions),
+              IconButton(icon: Icon(Icons.list), onPressed:_validRegions == null ? null : _filterRegions),
             ],
           ),
           body: Center(
@@ -386,9 +373,9 @@ class BlueBikeApp extends StatelessWidget {
 class HomePage extends StatelessWidget {
   HomePage({Key key, this.title}) : super(key: key);
   final String title;
-
+  final BikeStationList homeBuilder = BikeStationList();
   @override
   Widget build(BuildContext context) {
-    return BikeStationList();
+    return homeBuilder;
   }
 }
