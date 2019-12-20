@@ -59,6 +59,10 @@ Map _availableBikes = Map();        // available bike count keyed by station id
 // row for bike station list
 Widget _buildBikeRow(BuildContext context, var station) {
 
+  // Left Column
+  //
+  //  Bike station name
+  //
   final leftColumn =
       Expanded (
           child:
@@ -78,6 +82,10 @@ Widget _buildBikeRow(BuildContext context, var station) {
             )
       );
 
+  // Right Column
+  //
+  // # of bikes avaialabel and # of docks available
+  //
   final rightColumn =
       Padding(
         padding: const EdgeInsets.all(8.0),
@@ -86,7 +94,7 @@ Widget _buildBikeRow(BuildContext context, var station) {
               Row (
                 children: <Widget>[
                   Text(
-                    _availableBikes[station['station_id']].toString(),
+                    _availableBikes[station['station_id']]['available'].toString(),
                     style:
                       TextStyle(
                           fontSize: 18.0, color:Colors.indigo
@@ -100,10 +108,10 @@ Widget _buildBikeRow(BuildContext context, var station) {
               Row (
                 children: <Widget>[
                   Text(
-                    station['capacity'].toString(),
+                    _availableBikes[station['station_id']]['num_docks_available'].toString(),
                     style:
                       TextStyle(
-                          fontSize: 16.0, color:Colors.blueGrey
+                          fontSize: 18.0, color:Colors.blueGrey
                       ),
                   )
                 ],
@@ -288,7 +296,8 @@ class _BikeStationListState extends State<BikeStationList>
     _systemStatus = new List.from(statusData.data['data']['stations']);
 
     // make a map of available bikes, key is staton id
-    for( var s in _systemStatus ) _availableBikes[s['station_id']] = s['num_bikes_available'];
+    for( var s in _systemStatus ) _availableBikes[s['station_id']] =
+    {'available': s['num_bikes_available'], 'num_docks_available': s['num_docks_available']};
 
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
