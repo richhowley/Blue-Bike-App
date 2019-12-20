@@ -56,17 +56,75 @@ Set _validRegions = null;           // regions with bikes
 List _systemStatus;                 // real-time station status
 Map _availableBikes = Map();        // available bike count keyed by station id
 
-  // row for bike station list
-  Widget _buildBikeRow(BuildContext context, var station) {
-  return ListTile(
-    title: Text(station['name'], style: TextStyle(fontSize: 18.0)),
-    trailing:
+// row for bike station list
+Widget _buildBikeRow(BuildContext context, var station) {
 
-    Text(_availableBikes[station['station_id']].toString() + ' / ' + station['capacity'].toString(),
-        style: TextStyle(fontSize: 16.0, color:Colors.indigo))
+  final leftColumn =
+      Expanded (
+          child:
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+                child: Column (
+                  children: <Widget>[
+                    Text(
+                      station['name'],
+                      style:
+                      TextStyle(
+                          fontSize: 18.0
+                      ),
+                    )
+                  ],
+                ),
+            )
+      );
 
-  );
+  final rightColumn =
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+          child: Column (
+            children: <Widget>[
+              Row (
+                children: <Widget>[
+                  Text(
+                    _availableBikes[station['station_id']].toString(),
+                    style:
+                      TextStyle(
+                          fontSize: 18.0, color:Colors.indigo
+                      ),
+                  )
+                ],
+              ),
+              Divider(
+                height: 5,
+              ),
+              Row (
+                children: <Widget>[
+                  Text(
+                    station['capacity'].toString(),
+                    style:
+                      TextStyle(
+                          fontSize: 16.0, color:Colors.blueGrey
+                      ),
+                  )
+                ],
+              ),
+            ],
+          ),
+      );
 
+    final tileLayout =
+        Container (
+          child:
+              Row (
+                children: <Widget>[
+                  leftColumn,
+                  rightColumn
+                ],
+              )
+        );
+
+
+    return tileLayout;
 }
 
 // view of bike stations, will change when list is filtered
