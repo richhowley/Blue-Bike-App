@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong/latlong.dart';
 
 void main() {
   runApp(
@@ -13,17 +15,64 @@ void main() {
 }
 
 class FilteredStations with ChangeNotifier {
+  List _fullBikeList;
+  List _regionsFilter = null;
   List bikeList;
 
   // initialize list, call as soon
   // as we have the list of bluebikes
   void initBikeList(List bl) {
-    bikeList = List.from(bl);
+    _fullBikeList = List.from(bl);
+    bikeList = _fullBikeList;
   }
 
-  // set filtered list and notify listners
-  void setBikeList(List bl) {
-    bikeList = List.from(bl);
+  void _filterBikes() {
+    bikeList = _fullBikeList.where((f) =>
+    _regionsFilter.indexOf(f['region_id'].toString()) != (-1))
+        .toList();
+
+  }
+
+  // used passed filter to set list
+  void setBikeListFilter(List regions) {
+
+    // save filter
+    _regionsFilter = regions;
+
+    // filter list
+    _filterBikes();
+
+    notifyListeners();
+  }
+
+
+  // sortBikeList
+  //
+  // Call to sort list of bikes, pass true to
+  // sort based on distance from device
+  void sortBikeList(bool sortByDist) {
+
+    // sort full list
+    if( sortByDist ) {
+      print("*** distance ***");
+      final Distance distance = new Distance();
+      LatLng loc = new LatLng(42.339661, -71.121618);
+      LatLng loca = new LatLng(42.365642, -71.128071);
+      LatLng locb = new LatLng(42.376114, -71.101785);
+
+      // sort by distance
+      _fullBikeList.sort((a, b) => distance(loc, new LatLng(a['lat'], a['lon'])).compareTo(distance(loc, new LatLng(b['lat'], b['lon']))));
+
+    } else {
+
+      // sort by alpha
+      _fullBikeList.sort((a, b) => a['name'].compareTo(b['name']));
+
+    } // else
+
+    // filter if necessary
+    if( _regionsFilter != null ) _filterBikes();
+
     notifyListeners();
   }
 
@@ -51,10 +100,41 @@ Future<Response> fetchInfo(String url) async {
   return retVal;
 }
 
-List _bikeStationList = null;       // list of Blue Bike stations
-Set _validRegions = null;           // regions with bikes
+
+Set _validRegions = Set();           // regions with bikes
 List _systemStatus;                 // real-time station status
 Map _availableBikes = Map();        // available bike count keyed by station id
+bool _sortByDist = false;
+
+class SortByDist extends StatefulWidget {
+  const SortByDist({ Key key }) : super(key: key);
+
+  @override
+  _SortByDistState createState() => _SortByDistState();
+}
+
+class _SortByDistState extends State<SortByDist> {
+  @override
+  Widget build(BuildContext context) {
+    return
+      SwitchListTile(
+          title: const Text('Sort by distance'),
+          value: _sortByDist,
+          onChanged: (bool value) {
+            setState(()
+            {
+                _sortByDist = !_sortByDist;
+
+                // sort list based on switch
+                Provider.of<FilteredStations>(context, listen: false).
+                sortBikeList(_sortByDist);
+
+            });
+          }
+      );
+
+  }
+}
 
 // row for bike station list
 Widget _buildBikeRow(BuildContext context, var station) {
@@ -76,7 +156,8 @@ Widget _buildBikeRow(BuildContext context, var station) {
                       TextStyle(
                           fontSize: 18.0
                       ),
-                    )
+                    ),
+
                   ],
                 ),
             )
@@ -97,7 +178,7 @@ Widget _buildBikeRow(BuildContext context, var station) {
                     _availableBikes[station['station_id']]['available'].toString(),
                     style:
                       TextStyle(
-                          fontSize: 18.0, color:Colors.indigo
+                          fontSize: 18.0, color:Colors.indigo,
                       ),
                   )
                 ],
@@ -166,8 +247,30 @@ class RegionList extends StatefulWidget {
     _RegionListState createState() => _RegionListState();
   }
 
+
+
   class _RegionListState extends State<RegionList>
   {
+    List _regionFilter;
+
+    // setRegionFilter
+    //
+    // Call when selected regions are changed
+    //
+    List setRegionFilter() {
+
+      List _regions = [];  // active regions
+
+      _regionFilter = [];  // ids of active regions
+
+      // get list of active regions
+      _regions = _validRegions.where((f) => f['active'] == true).toList();
+
+      // strip region ids out of active list
+      for(final r in _regions){ _regionFilter.add(r['region_id']); }
+
+      return(_regionFilter);
+    }
 
     // filterRegion
     //
@@ -175,16 +278,8 @@ class RegionList extends StatefulWidget {
     //
     bool filterRegion(var station) {
 
-      List regionFilter = [];
-
-      // get list of active regions
-      List regions = _validRegions.where((f) => f['active'] == true).toList();
-
-      // strip region ids out of active list
-      for(final r in regions){ regionFilter.add(r['region_id']); }
-
       // return true if station has a region id on the active list
-      return regionFilter.indexOf(station['region_id'].toString()) != (-1);
+      return _regionFilter.indexOf(station['region_id'].toString()) != (-1);
     }
 
     Widget build(BuildContext context) {
@@ -205,10 +300,10 @@ class RegionList extends StatefulWidget {
                   // toggle value in region list
                   region['active'] = !region['active'];
 
-                  // filter bike station list to reflect change
+                  // build a new filter to reflect this change
+                  setRegionFilter();
                   Provider.of<FilteredStations>(context, listen: false).
-                  setBikeList(_bikeStationList.where((f) => filterRegion(f))
-                      .toList());
+                  setBikeListFilter(setRegionFilter());
 
                });
               }
@@ -223,13 +318,30 @@ class RegionList extends StatefulWidget {
       )
           .toList();
 
-      return Scaffold(
-          appBar: AppBar(
-            title: Text("Select Regions"),
-          ),
-          body: ListView(children: divided),
+      return
+            Center(
+              child: Card (
+                child:
+                    Column (
+                      children: <Widget>[
+                        const ListTile(
+                          title: Text('List only bikes in:',
+                          style:
+                            TextStyle(
+                                fontSize: 18.0
+                            )
+                          ),
+                        ),
+                        Expanded (
+                          child: ListView(children: divided),
+                        ),
 
-      );
+                      ],
+                    )
+
+              ),
+            );
+
     }
 
   }
@@ -252,13 +364,33 @@ class _BikeStationListState extends State<BikeStationList>
   void _filterRegions() {
 
     final RegionList _regionPicker = RegionList();
+    final SortByDist _distSort = SortByDist();
 
     Navigator.of(context).push(
 
       MaterialPageRoute<void>(
 
           builder: (BuildContext context) {
-              return _regionPicker;
+            //  return _regionPicker;
+
+              return
+                Scaffold(
+                  appBar: AppBar(
+                    title: Text('Settings'),
+                  ),
+                  body:
+                    Column(
+                      children: <Widget>[
+                        Expanded (
+                          child: _regionPicker,
+                        ),
+
+                        _distSort
+
+                      ],
+                    )
+
+                );
           },
 
         )
@@ -273,7 +405,7 @@ class _BikeStationListState extends State<BikeStationList>
   // server.  Information includes data feeds
   // and region oodes,  Return list of stations.
   //
-  static Future<List> getStations(BuildContext context) async {
+  Future<List> getStations(BuildContext context) async {
 
     List _feeds;                // data feeds for Blue Bike system
     List stations = null;  // list of stations
@@ -281,8 +413,21 @@ class _BikeStationListState extends State<BikeStationList>
 
     String url;
 
+    // https://github.com/NABSA/gbfs/blob/master/systems.csv
+    String boston = 'https://gbfs.bluebikes.com/gbfs/gbfs.json';
+    String houston = 'https://gbfs.bcycle.com/bcycle_houston/gbfs.json';
+    String philadelphia = 'https://gbfs.bcycle.com/bcycle_indego/gbfs.json';
+    String indianapolis = 'https://gbfs.bcycle.com/bcycle_pacersbikeshare/gbfs.json';
+    String washingtondc = 'https://gbfs.uber.com/v1/dcb/gbfs.json';
+    String losangeles = 'https://gbfs.uber.com/v1/laxb/gbfs.json';
+    String austin = 'https://gbfs.uber.com/v1/atxb/gbfs.json';
+    String sanantonio = 'https://gbfs.bcycle.com/bcycle_sanantonio/gbfs.json';
+    String lyftChicago = 'https://s3.amazonaws.com/lyft-lastmile-production-iad/lbs/chi/gbfs.json';
+
+    url = boston;
+
     // get system information feeds
-    final Response feedData = await fetchInfo("https://gbfs.bluebikes.com/gbfs/gbfs.json");
+    final Response feedData = await fetchInfo(url);
     _feeds = new List.from(feedData.data['data']['en']['feeds']);
 
     // use system region url to get region codes
@@ -306,13 +451,17 @@ class _BikeStationListState extends State<BikeStationList>
     // if call was successful
     if( stationData != null ) {
 
+      List _bikeStationList;       // list of Blue Bike stations
+
       // we have data, create list of stations
-      _bikeStationList =  new List.unmodifiable(stationData.data['data']['stations']);
+      _bikeStationList =  new List.from(stationData.data['data']['stations']);
 
       // put all stations on filterable list
       Provider.of<FilteredStations>(context, listen: false).initBikeList(_bikeStationList);
 
-      _validRegions = Set();
+      // sort list by alpha
+      Provider.of<FilteredStations>(context, listen: false).
+      sortBikeList(false);
 
       // make set containing only regions with bikes
       for(final region in _systemRegions){
@@ -405,7 +554,7 @@ class _BikeStationListState extends State<BikeStationList>
           appBar: AppBar (
             title: Text('Blue Bikes'),
             actions: <Widget>[
-              IconButton(icon: Icon(Icons.list), onPressed:_validRegions == null ? null : _filterRegions),
+              IconButton(icon: Icon(Icons.list), onPressed:_validRegions.length == 0  ? null : _filterRegions),
             ],
           ),
           body: Center(
