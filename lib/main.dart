@@ -15,9 +15,10 @@ void main() {
 }
 
 class FilteredStations with ChangeNotifier {
-  List _fullBikeList;
+  List _fullBikeList;         // complete list read from server
+  List bikeList;              // list with filter applied
   List _regionsFilter = null;
-  List bikeList;
+
 
   // initialize list, call as soon
   // as we have the list of bluebikes
@@ -45,35 +46,88 @@ class FilteredStations with ChangeNotifier {
     notifyListeners();
   }
 
+  // bikeListSorted
+  //
+  // Call after the full list has been sorted
+  //
+  void bikeListSorted() {
+
+    // filter if necessary
+    if( _regionsFilter != null ) _filterBikes();
+
+    notifyListeners();
+
+  }
+
+  // sortBikesByDist
+  //
+  // Return current location of device
+  //
+  Future<Position> sortBikesByDist(BuildContext context) async {
+
+    // sorting message as modal
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: Text("Getting location ..."),
+          content:
+          Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children:
+              <Widget> [
+                CircularProgressIndicator()
+              ]
+          ),
+
+        );
+      },
+    );
+
+    Position position = await Geolocator().getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+    if( position != null ) {
+      final Distance distance = new Distance();
+      LatLng loc = new LatLng(position.latitude, position.longitude);
+
+      // sort by distance
+      _fullBikeList.sort((a, b) =>
+          distance(loc, new LatLng(a['lat'], a['lon'])).compareTo(
+              distance(loc, new LatLng(b['lat'], b['lon']))));
+
+      // filter and update
+      bikeListSorted();
+
+      // remove modal
+      Navigator.pop(context);
+
+    } // if
+  }
 
   // sortBikeList
   //
   // Call to sort list of bikes, pass true to
   // sort based on distance from device
-  void sortBikeList(bool sortByDist) {
+  void sortBikeList(BuildContext context, bool sortByDist) {
 
     // sort full list
     if( sortByDist ) {
-      print("*** distance ***");
-      final Distance distance = new Distance();
-      LatLng loc = new LatLng(42.339661, -71.121618);
-      LatLng loca = new LatLng(42.365642, -71.128071);
-      LatLng locb = new LatLng(42.376114, -71.101785);
 
-      // sort by distance
-      _fullBikeList.sort((a, b) => distance(loc, new LatLng(a['lat'], a['lon'])).compareTo(distance(loc, new LatLng(b['lat'], b['lon']))));
+      // sort by distance to device
+      sortBikesByDist(context);
 
     } else {
 
       // sort by alpha
       _fullBikeList.sort((a, b) => a['name'].compareTo(b['name']));
 
+      // filter and update
+      bikeListSorted();
+
     } // else
 
-    // filter if necessary
-    if( _regionsFilter != null ) _filterBikes();
 
-    notifyListeners();
   }
 
 }
@@ -127,7 +181,7 @@ class _SortByDistState extends State<SortByDist> {
 
                 // sort list based on switch
                 Provider.of<FilteredStations>(context, listen: false).
-                sortBikeList(_sortByDist);
+                sortBikeList(context, _sortByDist);
 
             });
           }
@@ -461,7 +515,7 @@ class _BikeStationListState extends State<BikeStationList>
 
       // sort list by alpha
       Provider.of<FilteredStations>(context, listen: false).
-      sortBikeList(false);
+      sortBikeList(context, false);
 
       // make set containing only regions with bikes
       for(final region in _systemRegions){
