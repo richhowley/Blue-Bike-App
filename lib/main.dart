@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong/latlong.dart';
+import 'dart:async';
 
 void main() {
   runApp(
@@ -18,7 +19,6 @@ class FilteredStations with ChangeNotifier {
   List _fullBikeList;         // complete list read from server
   List bikeList;              // list with filter applied
   List _regionsFilter = null;
-
 
   // initialize list, call as soon
   // as we have the list of bluebikes
@@ -76,9 +76,9 @@ class FilteredStations with ChangeNotifier {
           Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children:
-              <Widget> [
-                CircularProgressIndicator()
-              ]
+                <Widget> [
+                  CircularProgressIndicator()
+                ]
           ),
 
         );
@@ -160,6 +160,98 @@ List _systemStatus;                 // real-time station status
 Map _availableBikes = Map();        // available bike count keyed by station id
 bool _sortByDist = false;
 
+Future<bool> _locationServiceOn = null;
+
+Future<bool> _getLocationService(BuildContext context) async {
+  bool _status = null;
+  _status  = await Geolocator().isLocationServiceEnabled ();
+
+  return _status;
+}
+
+class DistSettings extends StatefulWidget {
+  const DistSettings({ Key key }) : super(key: key);
+
+  @override
+  _DistSettingsState createState() => _DistSettingsState();
+}
+
+class _DistSettingsState extends State<DistSettings> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    var geolocator = Geolocator();
+    var locationOptions = LocationOptions(accuracy: LocationAccuracy.high, distanceFilter: 10);
+
+    StreamSubscription<Position> positionStream = geolocator.getPositionStream(locationOptions).listen(
+            (Position position) {
+          print(position == null ? 'Unknown' : position.latitude.toString() + ', ' + position.longitude.toString());
+        });
+
+    _locationServiceOn = _getLocationService(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+        future: _locationServiceOn,
+
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+
+          return Column (
+              children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                          Expanded(
+                            child: SwitchListTile(
+                              title: const Text('Sort by distance'),
+                              value: _sortByDist,
+                              onChanged: (snapshot.hasData && snapshot.data) ?
+                                  (bool value) {
+                                    setState(() {
+                                    _sortByDist = value; //!_sortByDist;
+
+                                    // sort list based on switch
+                                    Provider.of<FilteredStations>(context, listen: false).
+                                    sortBikeList(context, _sortByDist);
+                                    });
+                                  } : null
+                            ),
+                          ),
+                      ]
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: FlatButton(
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                            disabledColor: Colors.grey,
+                            disabledTextColor: Colors.black,
+                            padding: EdgeInsets.all(8.0),
+                            splashColor: Colors.blueAccent,
+                            onPressed: (_sortByDist && snapshot.hasData && snapshot.data) ? () {
+                              // re-sort list based distance
+                              Provider.of<FilteredStations>(context, listen: false).
+                              sortBikeList(context, true);
+                            } : null,
+                            child: Text(
+                              "Refresh",
+                              style: TextStyle(fontSize: 20.0),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+              ]
+            );
+
+        });
+  }
+}
+
 class SortByDist extends StatefulWidget {
   const SortByDist({ Key key }) : super(key: key);
 
@@ -167,25 +259,73 @@ class SortByDist extends StatefulWidget {
   _SortByDistState createState() => _SortByDistState();
 }
 
+bool _locationOn=false;
+
+Future<void> getLocationStatus() async {
+  bool _geolocationStatus  = await Geolocator().isLocationServiceEnabled ();
+  _locationOn=_geolocationStatus;
+}
+
 class _SortByDistState extends State<SortByDist> {
+
   @override
   Widget build(BuildContext context) {
+
+    getLocationStatus();
+
     return
-      SwitchListTile(
-          title: const Text('Sort by distance'),
-          value: _sortByDist,
-          onChanged: (bool value) {
-            setState(()
-            {
-                _sortByDist = !_sortByDist;
+        Column(
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: SwitchListTile(
+                      title: const Text('Sort by distance'),
+                      value: _sortByDist,
+                      onChanged: _locationOn ?
+                          (bool value) {
+                        setState(() {
+                          _sortByDist = value; //!_sortByDist;
 
-                // sort list based on switch
-                Provider.of<FilteredStations>(context, listen: false).
-                sortBikeList(context, _sortByDist);
+                          // sort list based on switch
+                          Provider.of<FilteredStations>(context, listen: false).
+                          sortBikeList(context, _sortByDist);
+                        });
+                      } : null
 
-            });
-          }
-      );
+                  ),
+                ),
+
+              ],
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: FlatButton(
+                    color: Colors.blue,
+                    textColor: Colors.white,
+                    disabledColor: Colors.grey,
+                    disabledTextColor: Colors.black,
+                    padding: EdgeInsets.all(8.0),
+                    splashColor: Colors.blueAccent,
+                    onPressed: _locationOn ? () {
+                      // re-sort list based distance
+                      Provider.of<FilteredStations>(context, listen: false).
+                      sortBikeList(context, true);
+                    } : null,
+                    child: Text(
+                      "Refresh",
+                      style: TextStyle(fontSize: 20.0),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          ],
+        );
+
+
+
 
   }
 }
@@ -225,6 +365,8 @@ Widget _buildBikeRow(BuildContext context, var station) {
       Padding(
         padding: const EdgeInsets.all(8.0),
           child: Column (
+            textDirection: TextDirection.ltr,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
               Row (
                 children: <Widget>[
@@ -419,6 +561,7 @@ class _BikeStationListState extends State<BikeStationList>
 
     final RegionList _regionPicker = RegionList();
     final SortByDist _distSort = SortByDist();
+    final DistSettings _distSettings = DistSettings();
 
     Navigator.of(context).push(
 
@@ -439,7 +582,7 @@ class _BikeStationListState extends State<BikeStationList>
                           child: _regionPicker,
                         ),
 
-                        _distSort
+                        _distSettings
 
                       ],
                     )
