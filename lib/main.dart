@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong/latlong.dart';
 import 'dart:async';
 
+List _feeds;    // urls for auto discuovery
+
 void main() {
   runApp(
     // Provider holds a list of stations ni the Blue Bike system
@@ -19,6 +21,7 @@ class FilteredStations with ChangeNotifier {
   List _fullBikeList;         // complete list read from server
   List bikeList;              // list with filter applied
   List _regionsFilter = null;
+
 
   // initialize list, call as soon
   // as we have the list of bluebikes
@@ -46,14 +49,24 @@ class FilteredStations with ChangeNotifier {
     notifyListeners();
   }
 
-  // bikeListSorted
+  // bikeListUpdated
   //
   // Call after the full list has been sorted
   //
-  void bikeListSorted() {
+  void bikeListUpdated() {
 
     // filter if necessary
     if( _regionsFilter != null ) _filterBikes();
+
+    notifyListeners();
+
+  }
+
+  // bikeStatusUpdated
+  //
+  //  Call when available bike count has been updated
+  //
+  void bikeStatusUpdated() {
 
     notifyListeners();
 
@@ -97,7 +110,7 @@ class FilteredStations with ChangeNotifier {
               distance(loc, new LatLng(b['lat'], b['lon']))));
 
       // filter and update
-      bikeListSorted();
+      bikeListUpdated();
 
       // remove modal
       Navigator.pop(context);
@@ -123,7 +136,7 @@ class FilteredStations with ChangeNotifier {
       _fullBikeList.sort((a, b) => a['name'].compareTo(b['name']));
 
       // filter and update
-      bikeListSorted();
+      bikeListUpdated();
 
     } // else
 
@@ -179,27 +192,11 @@ class DistSettings extends StatefulWidget {
 class _DistSettingsState extends State<DistSettings> {
 
   @override
-  void initState() {
-    super.initState();
-
-    var geolocator = Geolocator();
-    var locationOptions = LocationOptions(accuracy: LocationAccuracy.high, distanceFilter: 10);
-
-    StreamSubscription<Position> positionStream = geolocator.getPositionStream(locationOptions).listen(
-            (Position position) {
-          print(position == null ? 'Unknown' : position.latitude.toString() + ', ' + position.longitude.toString());
-        });
-
-    _locationServiceOn = _getLocationService(context);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-        future: _locationServiceOn,
+        future:  _getLocationService(context),
 
         builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-
           return Column (
               children: <Widget>[
                     Row(
@@ -211,7 +208,7 @@ class _DistSettingsState extends State<DistSettings> {
                               onChanged: (snapshot.hasData && snapshot.data) ?
                                   (bool value) {
                                     setState(() {
-                                    _sortByDist = value; //!_sortByDist;
+                                    _sortByDist = value;;
 
                                     // sort list based on switch
                                     Provider.of<FilteredStations>(context, listen: false).
@@ -323,9 +320,6 @@ class _SortByDistState extends State<SortByDist> {
             )
           ],
         );
-
-
-
 
   }
 }
@@ -594,6 +588,40 @@ class _BikeStationListState extends State<BikeStationList>
     );
   }
 
+  // _getSystemStatus
+  //
+  // Read real-time count of available bikes and docks
+  //
+  Future<void> _getSystemStatus() async {
+
+    String url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
+    final Response statusData = await fetchInfo(url);
+    _systemStatus = new List.from(statusData.data['data']['stations']);
+
+    // make a map of available bikes, key is staton id
+    for( var s in _systemStatus ) _availableBikes[s['station_id']] =
+    {'available': s['num_bikes_available'], 'num_docks_available': s['num_docks_available']};
+
+  }
+
+
+  // _updateStatus
+  //
+  // Call to update the count of available bikes
+  // and docks
+  //
+  Future<void> _updateStatus() async {
+
+    // read status
+    await _getSystemStatus();
+
+    // update interface
+    Provider.of<FilteredStations>(context, listen: false).
+    bikeStatusUpdated();
+
+  }
+
+
   Future<List> _sList;
 
   // getStations
@@ -602,9 +630,9 @@ class _BikeStationListState extends State<BikeStationList>
   // server.  Information includes data feeds
   // and region oodes,  Return list of stations.
   //
-  Future<List> getStations(BuildContext context) async {
+  Future<List> getStations() async {
 
-    List _feeds;                // data feeds for Blue Bike system
+    // data feeds for Blue Bike system
     List stations = null;  // list of stations
     List _systemRegions;        // all region
 
@@ -633,6 +661,8 @@ class _BikeStationListState extends State<BikeStationList>
     _systemRegions = new List.from(regionData.data['data']['regions']);
 
     // get station status
+    await _getSystemStatus();
+    /*
     url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
     final Response statusData = await fetchInfo(url);
     _systemStatus = new List.from(statusData.data['data']['stations']);
@@ -640,7 +670,7 @@ class _BikeStationListState extends State<BikeStationList>
     // make a map of available bikes, key is staton id
     for( var s in _systemStatus ) _availableBikes[s['station_id']] =
     {'available': s['num_bikes_available'], 'num_docks_available': s['num_docks_available']};
-
+*/
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
     final Response stationData = await fetchInfo(url);
@@ -696,7 +726,7 @@ class _BikeStationListState extends State<BikeStationList>
 
     // read data on bike system, last piece
     // of information read is list of stations
-    _sList = getStations(context);
+    _sList = getStations();
   }
 
   // Home screen is built with a FutureBuilder
@@ -751,7 +781,8 @@ class _BikeStationListState extends State<BikeStationList>
           appBar: AppBar (
             title: Text('Blue Bikes'),
             actions: <Widget>[
-              IconButton(icon: Icon(Icons.list), onPressed:_validRegions.length == 0  ? null : _filterRegions),
+               IconButton(icon: Icon(Icons.directions_bike), onPressed: snapshot.hasData ? _updateStatus : null),
+               IconButton(icon: Icon(Icons.list), onPressed:_validRegions.length == 0  ? null : _filterRegions),
             ],
           ),
           body: Center(
