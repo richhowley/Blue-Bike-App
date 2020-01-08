@@ -5,7 +5,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong/latlong.dart';
 import 'dart:async';
 
+
 List _feeds;    // urls for auto discuovery
+
+//AIzaSyDh-Vw5XsJ5elyGp277AnihOhWXoozEAmA
+
 
 void main() {
   runApp(
@@ -332,23 +336,20 @@ Widget _buildBikeRow(BuildContext context, var station) {
   //  Bike station name
   //
   final leftColumn =
-      Expanded (
-          child:
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-                child: Column (
-                  children: <Widget>[
-                    Text(
-                      station['name'],
-                      style:
-                      TextStyle(
-                          fontSize: 18.0
-                      ),
-                    ),
-
-                  ],
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+          child: Column (
+            children: <Widget>[
+              Text(
+                station['name'],
+                style:
+                TextStyle(
+                    fontSize: 18.0
                 ),
-            )
+              ),
+
+            ],
+          ),
       );
 
   // Right Column
@@ -359,10 +360,9 @@ Widget _buildBikeRow(BuildContext context, var station) {
       Padding(
         padding: const EdgeInsets.all(8.0),
           child: Column (
-            textDirection: TextDirection.ltr,
-            mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
               Row (
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   Text(
                     _availableBikes[station['station_id']]['available'].toString(),
@@ -377,6 +377,7 @@ Widget _buildBikeRow(BuildContext context, var station) {
                 height: 5,
               ),
               Row (
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   Text(
                     _availableBikes[station['station_id']]['num_docks_available'].toString(),
@@ -396,8 +397,8 @@ Widget _buildBikeRow(BuildContext context, var station) {
           child:
               Row (
                 children: <Widget>[
-                  leftColumn,
-                  rightColumn
+                  Expanded(flex: 8, child: leftColumn),
+                  Expanded(flex: 2, child: rightColumn)
                 ],
               )
         );
@@ -610,7 +611,7 @@ class _BikeStationListState extends State<BikeStationList>
   // Call to update the count of available bikes
   // and docks
   //
-  Future<void> _updateStatus() async {
+  Future<void> _updateStatus(BuildContext context) async {
 
     // read status
     await _getSystemStatus();
@@ -618,6 +619,12 @@ class _BikeStationListState extends State<BikeStationList>
     // update interface
     Provider.of<FilteredStations>(context, listen: false).
     bikeStatusUpdated();
+
+    final snackBar = SnackBar(content: Text('Station info updated'));
+
+// Find the Scaffold in the widget tree and use it to show a SnackBar.
+    Scaffold.of(context).showSnackBar(snackBar);
+
 
   }
 
@@ -662,15 +669,7 @@ class _BikeStationListState extends State<BikeStationList>
 
     // get station status
     await _getSystemStatus();
-    /*
-    url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
-    final Response statusData = await fetchInfo(url);
-    _systemStatus = new List.from(statusData.data['data']['stations']);
 
-    // make a map of available bikes, key is staton id
-    for( var s in _systemStatus ) _availableBikes[s['station_id']] =
-    {'available': s['num_bikes_available'], 'num_docks_available': s['num_docks_available']};
-*/
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
     final Response stationData = await fetchInfo(url);
@@ -683,7 +682,7 @@ class _BikeStationListState extends State<BikeStationList>
       // we have data, create list of stations
       _bikeStationList =  new List.from(stationData.data['data']['stations']);
 
-      // put all stations on filterable list
+        // put all stations on filterable list
       Provider.of<FilteredStations>(context, listen: false).initBikeList(_bikeStationList);
 
       // sort list by alpha
@@ -781,7 +780,15 @@ class _BikeStationListState extends State<BikeStationList>
           appBar: AppBar (
             title: Text('Blue Bikes'),
             actions: <Widget>[
-               IconButton(icon: Icon(Icons.directions_bike), onPressed: snapshot.hasData ? _updateStatus : null),
+                Builder (
+                  builder: (BuildContext context) {
+                    return IconButton(icon: Icon(Icons.directions_bike),
+                        onPressed: snapshot.hasData
+                            ? () => _updateStatus(context)
+                            : null);
+
+                  }
+               ),
                IconButton(icon: Icon(Icons.list), onPressed:_validRegions.length == 0  ? null : _filterRegions),
             ],
           ),
