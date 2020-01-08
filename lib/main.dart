@@ -25,6 +25,7 @@ class FilteredStations with ChangeNotifier {
   List _fullBikeList;         // complete list read from server
   List bikeList;              // list with filter applied
   List _regionsFilter = null;
+  Map _availableBikes = Map();        // available bike count keyed by station id
 
 
   // initialize list, call as soon
@@ -70,7 +71,12 @@ class FilteredStations with ChangeNotifier {
   //
   //  Call when available bike count has been updated
   //
-  void bikeStatusUpdated() {
+  void bikeStatusUpdated(List _stationStatus) {
+
+    // make a map of available bikes, key is station id
+    for( var s in _stationStatus )
+      _availableBikes[s['station_id']] =
+      {'available': s['num_bikes_available'], 'num_docks_available': s['num_docks_available']};
 
     notifyListeners();
 
@@ -173,8 +179,6 @@ Future<Response> fetchInfo(String url) async {
 
 
 Set _validRegions = Set();           // regions with bikes
-List _systemStatus;                 // real-time station status
-Map _availableBikes = Map();        // available bike count keyed by station id
 bool _sortByDist = false;
 
 Future<bool> _locationServiceOn = null;
@@ -365,6 +369,7 @@ Widget _buildBikeRow(BuildContext context, var station) {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   Text(
+                    Provider.of<FilteredStations>(context, listen: false).
                     _availableBikes[station['station_id']]['available'].toString(),
                     style:
                       TextStyle(
@@ -380,6 +385,7 @@ Widget _buildBikeRow(BuildContext context, var station) {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   Text(
+                    Provider.of<FilteredStations>(context, listen: false).
                     _availableBikes[station['station_id']]['num_docks_available'].toString(),
                     style:
                       TextStyle(
@@ -589,22 +595,20 @@ class _BikeStationListState extends State<BikeStationList>
     );
   }
 
-  // _getSystemStatus
+  // _getStationStatus
   //
   // Read real-time count of available bikes and docks
   //
-  Future<void> _getSystemStatus() async {
+  Future<void> _getStationStatus() async {
 
     String url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
     final Response statusData = await fetchInfo(url);
-    _systemStatus = new List.from(statusData.data['data']['stations']);
 
-    // make a map of available bikes, key is staton id
-    for( var s in _systemStatus ) _availableBikes[s['station_id']] =
-    {'available': s['num_bikes_available'], 'num_docks_available': s['num_docks_available']};
+    // update interface
+    Provider.of<FilteredStations>(context, listen: false).
+    bikeStatusUpdated( new List.from(statusData.data['data']['stations']));
 
   }
-
 
   // _updateStatus
   //
@@ -614,11 +618,8 @@ class _BikeStationListState extends State<BikeStationList>
   Future<void> _updateStatus(BuildContext context) async {
 
     // read status
-    await _getSystemStatus();
+    await _getStationStatus();
 
-    // update interface
-    Provider.of<FilteredStations>(context, listen: false).
-    bikeStatusUpdated();
 
     final snackBar = SnackBar(content: Text('Station info updated'));
 
@@ -668,7 +669,7 @@ class _BikeStationListState extends State<BikeStationList>
     _systemRegions = new List.from(regionData.data['data']['regions']);
 
     // get station status
-    await _getSystemStatus();
+    await _getStationStatus();
 
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
