@@ -18,15 +18,19 @@ void main() {
 }
 
 class FilteredStations with ChangeNotifier {
-  List _fullBikeList;         // complete list read from server
-  List _bikeList;              // list with filter applied
+  List _fullBikeList;         // complete list of installed stations read from server
+  List _bikeList;             // list with filter applied
   List _regionsFilter = null;
   Map _availableBikes = Map(); // available bike count keyed by station id
 
   // initialize list, call as soon
   // as we have the list of bluebikes
   void initBikeList(List bl) {
-    _fullBikeList = List.from(bl);
+
+    // remove stations not on street
+    _fullBikeList = bl.where((f) => _availableBikes[f['station_id']]['is_installed']== 1).toList();
+
+    // filtered list begins with all stations
     _bikeList = _fullBikeList;
   }
 
@@ -73,8 +77,8 @@ class FilteredStations with ChangeNotifier {
       _availableBikes[s['station_id']] =
             {
               'available': s['num_bikes_available'],
-              'num_docks_available': s['num_docks_available']
-
+              'num_docks_available': s['num_docks_available'],
+              'is_installed' : s['is_installed']
             };
 
     notifyListeners();
@@ -659,7 +663,7 @@ class _BikeStationListState extends State<BikeStationList>
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text('Unalbe to read from server'),
-            )
+            ),
           ];
         } else {
 
