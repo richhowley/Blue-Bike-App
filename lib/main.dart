@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
@@ -179,7 +180,6 @@ Future<Response> fetchInfo(String url) async {
   return retVal;
 }
 
-
 Set _validRegions = Set();  // regions with bikes
 bool _sortByDist = false;  // true => sort stations by distance from device
 
@@ -332,6 +332,15 @@ Widget _buildBikeRow(BuildContext context, var station) {
 
       final tileLayout =
           Container (
+              decoration: BoxDecoration(
+                border: Border(
+                    left: BorderSide( //                   <--- left side
+                      color:_validRegions.where((f) => f['region_id'] ==
+                          station['region_id'].toString()).toList()[0]['color'],
+                      width: 5.0,
+                    )
+                ),
+              ),
             child:
                 Row (
                   children: <Widget>[
@@ -418,9 +427,22 @@ class RegionList extends StatefulWidget {
       Iterable<CheckboxListTile> tiles = _validRegions.map(
             (region) {
           return CheckboxListTile(
-              title: Text(
-                region['name'],
-                style: _biggerFont,
+              title: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                      left: BorderSide( //                   <--- left side
+                        color: region['color'],
+                        width: 5.0,
+                      )
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left:8.0),
+                  child: Text(
+                    region['name'],
+                    style: _biggerFont,
+                  ),
+                ),
               ),
               value: region['active'],
               onChanged:(val){
@@ -614,6 +636,30 @@ class _BikeStationListState extends State<BikeStationList>
           } // if
         } // for
       } // for
+
+      double _wheel = 0;  // degrees on color wheel
+
+      // assign a color code to each region
+      _validRegions.toList().asMap().forEach((index, region) {
+
+        double _hue;
+
+        // adjacent region colors are opposites on the color wheel
+        if( (index%2) == 0 ) {
+            _hue = _wheel;
+          } else {
+          // take value from opposite side on odd entries
+          _hue = _wheel+180;
+
+          // move hue around wheel
+          _wheel += 35;
+        }
+
+        // set color code
+        region['color'] = HSLColor.fromAHSL(1.0, _hue , 0.5, 0.5).toColor();
+
+      });
+
 
       // set return value
       stations = _bikeStationList;
