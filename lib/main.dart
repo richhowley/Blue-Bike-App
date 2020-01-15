@@ -35,6 +35,7 @@ class FilteredStations with ChangeNotifier {
     _bikeList = _fullBikeList;
   }
 
+  // set bikelist to only stations in selected regions
   void _filterBikes() {
     _bikeList = _fullBikeList.where((f) =>
     _regionsFilter.indexOf(f['region_id'].toString()) != (-1))
@@ -452,7 +453,6 @@ class RegionList extends StatefulWidget {
                   region['active'] = !region['active'];
 
                   // build a new filter to reflect this change
-                  setRegionFilter();
                   Provider.of<FilteredStations>(context, listen: false).
                   setBikeListFilter(setRegionFilter());
 
