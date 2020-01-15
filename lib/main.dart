@@ -182,6 +182,7 @@ Future<Response> fetchInfo(String url) async {
 }
 
 Set _validRegions = Set();  // regions with bikes
+Map _colorCodes = Map();    // color codes for regions
 bool _sortByDist = false;  // true => sort stations by distance from device
 
 // _getLocationService
@@ -336,8 +337,7 @@ Widget _buildBikeRow(BuildContext context, var station) {
               decoration: BoxDecoration(
                 border: Border(
                     left: BorderSide( //                   <--- left side
-                      color:_validRegions.where((f) => f['region_id'] ==
-                          station['region_id'].toString()).toList()[0]['color'],
+                      color: _colorCodes[station['region_id'].toString()],
                       width: 5.0,
                     )
                 ),
@@ -432,7 +432,7 @@ class RegionList extends StatefulWidget {
                 decoration: BoxDecoration(
                   border: Border(
                       left: BorderSide( //                   <--- left side
-                        color: region['color'],
+                        color: _colorCodes[region['region_id']],
                         width: 5.0,
                       )
                   ),
@@ -656,11 +656,10 @@ class _BikeStationListState extends State<BikeStationList>
         }
 
         // set color code
-        region['color'] = HSLColor.fromAHSL(1.0, _hue , 0.5, 0.5).toColor();
+        _colorCodes[region['region_id'].toString()] = HSLColor.fromAHSL(1.0, _hue , 0.5, 0.5).toColor();
 
       });
-
-
+      
       // set return value
       stations = _bikeStationList;
 
