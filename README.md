@@ -12,8 +12,8 @@ A settings screen allows filtering the list of rental stations by city.  If the 
 
 There is a button on the main screen to update the count of bikes and docks available at each station.
 
-<details>
-<summary>Notes on the Code</summary>
+
+**Notes on the Code**
 
 The optional auto-discovery file [gbfs.json](https://gbfs.bluebikes.com/gbfs/gbfs.json) is included in the BlueBike feed and is used to locate all other data files.
 
@@ -33,4 +33,6 @@ The data model also allows sorting of the master list by distance from the devic
 
 The count of bikes and docks available may be updated via a button on the main screen.  When the button is pressed the station status data is read and passed to the data model, which causes an update to the interface.
 
-</details>
+![Blue_Bike_Menu](https://user-images.githubusercontent.com/318132/73462708-3ab80200-434a-11ea-89bd-fba4b81015bd.png)
+![Blue_Bike_Settings](https://user-images.githubusercontent.com/318132/73462709-3ab80200-434a-11ea-8fe3-5d0e02550849.png)
+
