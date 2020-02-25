@@ -707,7 +707,7 @@ class _BikeStationListState extends State<BikeStationList>
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Unalbe to read from server'),
+              child: Text('Unalbe to read from server,\n check internet connection.'),
             ),
           ];
         } else {
