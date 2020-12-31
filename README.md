@@ -10,7 +10,8 @@ Only want the bikes in your city? Click the settings button from the home screen
 
 Turn on "Auto Update" for sorting by distance and availabe bikes on the More Settings screen and the app will regularly re-sont the list of bike stations as the device moves and will update the count of available bikes and docks. To save battery, keep auto update off and update sorting by distance on the More Settings screen and update available bikes and docks from the home screen at the push of a button.
 
-**Notes on the Code**
+<details>
+<summary **Notes on the Code**>
 
 BLUEbikes uses the [General Bikeshare Feed Specification](https://github.com/NABSA/gbfs/blob/master/gbfs.md) to provide [real-time data](https://www.bluebikes.com/system-data). The optional auto-discovery file [gbfs.json](https://gbfs.bluebikes.com/gbfs/gbfs.json) is included in the BlueBike feed and is used to locate all other data files.
 
@@ -29,5 +30,6 @@ Dart ChangeNotifierProviders are used to store the data model, which consistes o
 The data model also allows sorting of the master list by distance from the device or alphabetic by station name.  The settings screen has a "Sort by distance" switch to toggle how the stations will be sorted and a button to re-sort the list at any time. To keep the list sorted by distance when the device moves Auto Update may be turned on and an update frquency may be set. If this feature is on a timer is used to update the sort.
 
 The count of available bikes and docks may also be updated using a timer using a set frequency. Alternatively, a button at the top of the home screen will retrieve updated availaility on demand. 
+</details>
 
 <img src="https://user-images.githubusercontent.com/318132/103423628-a5cf1180-4b75-11eb-8593-5c6242ae032c.jpeg" width="238" height="440"> <img src="https://user-images.githubusercontent.com/318132/103423727-3a397400-4b76-11eb-8a59-8ec56b4a1f11.jpeg" width="238" height="440"> <img src="https://user-images.githubusercontent.com/318132/103423750-5806d900-4b76-11eb-98ef-98814732dbdf.jpeg" width="238" height="440">
