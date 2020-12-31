@@ -1,10 +1,12 @@
 # Blue Bikes
 
-A Flutter application that provides information on the Boston bike sharing system Bluebikes.
+A mobile application to provides information on the Boston public bike sharing system [BLUEbikes](https://www.bluebikes.com/).
+
+Since it is built using the Flutter framework it can be built for either Android or iOS.
 
 **Using the App**
 
-BlueBikes uses the [General Bikeshare Feed Specification](https://github.com/NABSA/gbfs/blob/master/gbfs.md) to provide [real-time data](https://www.bluebikes.com/system-data).  
+BLUEbikes uses the [General Bikeshare Feed Specification](https://github.com/NABSA/gbfs/blob/master/gbfs.md) to provide [real-time data](https://www.bluebikes.com/system-data).  
 
 The app lists all bicycle stations in the system along with the number of bikes availabe for rent and the number of docks accepting bicycle returns.  When the app is launched it presents a list of all rental stations in alphabetical order.  The BlueBike system operates in five cities:  Brookline, Cambridge, Somerville, Boston and Everett. Each entry on the list is color-coded by city.
 
