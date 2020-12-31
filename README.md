@@ -11,7 +11,8 @@ Only want the bikes in your city? Click the settings button from the home screen
 Turn on "Auto Update" for sorting by distance and availabe bikes on the More Settings screen and the app will regularly re-sont the list of bike stations as the device moves and will update the count of available bikes and docks. To save battery, keep auto update off and update sorting by distance on the More Settings screen and update available bikes and docks from the home screen at the push of a button.
 
 <details>
-<summary> **Notes on the Code**</summary>
+<summary> Notes on the Code</summary>
+
 
 BLUEbikes uses the [General Bikeshare Feed Specification](https://github.com/NABSA/gbfs/blob/master/gbfs.md) to provide [real-time data](https://www.bluebikes.com/system-data). The optional auto-discovery file [gbfs.json](https://gbfs.bluebikes.com/gbfs/gbfs.json) is included in the BlueBike feed and is used to locate all other data files.
 
