@@ -2,7 +2,7 @@
 
 A mobile application to provides information on the Boston public bike sharing system [BLUEbikes](https://www.bluebikes.com/).
 
-Since it is built using the [Flutter UI toolkit](https://flutter.dev/) it can be built for either Android or iOS.
+Since it was developed using the [Flutter UI toolkit](https://flutter.dev/) it can be built for either Android or iOS.
 
 **Using the App**
 
