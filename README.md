@@ -30,6 +30,8 @@ The data model also allows sorting of the master list by distance from the devic
 
 The count of available bikes and docks may also be updated using a timer using a set frequency. Alternatively, a button at the top of the home screen will retrieve updated availaility on demand. 
 
-![Blue_Bike_Menu](https://user-images.githubusercontent.com/318132/73462708-3ab80200-434a-11ea-89bd-fba4b81015bd.png)
-![Blue_Bike_Settings](https://user-images.githubusercontent.com/318132/73462709-3ab80200-434a-11ea-8fe3-5d0e02550849.png)
-![bb_main_screen](https://user-images.githubusercontent.com/318132/103422991-41f71980-4b72-11eb-9115-4df67bbde80e.jpeg)
+<img src="https://user-images.githubusercontent.com/318132/103423628-a5cf1180-4b75-11eb-8593-5c6242ae032c.jpeg" width="238" height="440">
+
+<img src="https://user-images.githubusercontent.com/318132/103423727-3a397400-4b76-11eb-8a59-8ec56b4a1f11.jpeg" width="238" height="440">
+
+<img src="https://user-images.githubusercontent.com/318132/103423750-5806d900-4b76-11eb-98ef-98814732dbdf.jpeg" width="238" height="440">
