@@ -6,13 +6,12 @@
 
 import 'package:blue_bikes/config_settings.dart';
 import 'package:blue_bikes/region_list.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import 'more_settings_screen.dart';
 
+//ignore: must_be_immutable
 class MoreSettings extends StatelessWidget {
-  ConfigSettings _config;
+  ConfigSettings _config = ConfigSettings(null);
 
   MoreSettings(ConfigSettings config) {
     this._config = config;
@@ -33,8 +32,9 @@ class MoreSettings extends StatelessWidget {
 
 }
 
+//ignore: must_be_immutable
 class Settings extends StatelessWidget {
-  ConfigSettings _config;
+  ConfigSettings _config = ConfigSettings(null);
 
   Settings(ConfigSettings config) {
     this._config = config;
@@ -52,13 +52,19 @@ class Settings extends StatelessWidget {
             Expanded(
               child: RegionList(_config),
             ),
-            FlatButton(
-              color: Colors.blue,
-              textColor: Colors.white,
-              disabledColor: Colors.grey,
-              disabledTextColor: Colors.black,
-              padding: EdgeInsets.all(8.0),
-              splashColor: Colors.blueAccent,
+
+            TextButton(
+              //disabledTextColor: Colors.black
+              style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  disabledForegroundColor: Colors.grey,
+                  padding: EdgeInsets.all(8.0),
+                  textStyle: TextStyle(
+                    color: Colors.white,
+
+                  )
+              ),
+
               onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(

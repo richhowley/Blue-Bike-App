@@ -7,16 +7,16 @@
 
 
 import 'package:blue_bikes/system_regions.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'config_settings.dart';
 import 'filtered_stations.dart';
 
+//ignore: must_be_immutable
 class RegionList extends StatefulWidget {
 
-  ConfigSettings config;
+  ConfigSettings config = ConfigSettings(null);
   RegionList(config) { this.config = config; }
 
   @override
@@ -25,9 +25,9 @@ class RegionList extends StatefulWidget {
 
 class _RegionListState extends State<RegionList>
 {
-  ConfigSettings _config;
+  ConfigSettings _config = ConfigSettings(null);
 
-  _RegionListState(config) { _config = config; }
+  _RegionListState(config) { if( config != null ) _config = config; }
 
   // setRegionFilter
   //
@@ -36,7 +36,7 @@ class _RegionListState extends State<RegionList>
   List _setRegionFilter() {
 
     // ids of active regions
-    List _regionFilter = List<String>();
+    List<String> _regionFilter = <String>[]; 
 
     // add id of each active valid region to filter
     Provider.of<SystemRegions>(context, listen: false).regions.forEach((region) {
@@ -55,7 +55,7 @@ class _RegionListState extends State<RegionList>
     final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
 
     // get regions
-    Set regions = Provider.of<SystemRegions>(context, listen: false).regions;
+    Set regions = Provider.of<SystemRegions>(context, listen: false).regions ?? [] as Set;
 
     // region name with checkbox
     Iterable<CheckboxListTile> regionTiles = regions.map(
@@ -82,6 +82,7 @@ class _RegionListState extends State<RegionList>
             ),
             // checkbox
             value: region['active'],
+            activeColor: Colors.blue,
             onChanged:(val){
               setState(() {
 
@@ -93,7 +94,8 @@ class _RegionListState extends State<RegionList>
                   regionsFilter = _setRegionFilter();
 
               });
-            }
+            },
+
         );
       },
     );
@@ -127,13 +129,20 @@ class _RegionListState extends State<RegionList>
                   children: <Widget>[
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: OutlineButton(
-                        color: Colors.white,
-                        textColor: Colors.black,
-                        padding: EdgeInsets.all(8.0),
+                      child: OutlinedButton(
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.all(8.0),
+                              textStyle: TextStyle(
+                                color: Colors.black,
+
+                              )
+                          ),
+
                         onPressed:  () {
                           // set all regions to on
-                          regionTiles.forEach((region) => region.onChanged(true));
+                         regionTiles.forEach((region) => region.onChanged!(true));
+
                         },
                         child: Row(
                           children: <Widget>[
@@ -141,7 +150,9 @@ class _RegionListState extends State<RegionList>
                               padding: const EdgeInsets.only(right: 8.0),
                               child: Text(
                                 "All On",
-                                style: TextStyle(fontSize: 16.0),
+                                style: TextStyle(fontSize: 16.0,
+                                    color: Colors.black),
+
                               ),
                             ),
                             Icon(Icons.check_circle, color: Colors.green,),
@@ -149,14 +160,19 @@ class _RegionListState extends State<RegionList>
                         ),
                       ),
                     ),
-                    OutlineButton(
-                      color: Colors.white,
-                      textColor: Colors.black,
-                      padding: EdgeInsets.all(8.0),
-                      splashColor: Colors.blueAccent,
+                    OutlinedButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.all(8.0),
+                        textStyle: TextStyle(
+                          color: Colors.black,
+
+                        )
+                      ),
+
                       onPressed:  () {
                         // set all regions to off
-                        regionTiles.forEach((region) => region.onChanged(false));
+                        regionTiles.forEach((region) => region.onChanged!(false));
                       },
                       child: Row(
                         children: <Widget>[
@@ -164,7 +180,8 @@ class _RegionListState extends State<RegionList>
                             padding: const EdgeInsets.only(right: 8.0),
                             child: Text(
                               "All Off",
-                              style: TextStyle(fontSize: 16.0),
+                              style: TextStyle(fontSize: 16.0,
+                                color: Colors.black),
                             ),
                           ),
                           Icon(Icons.highlight_off, color: Colors.red,),

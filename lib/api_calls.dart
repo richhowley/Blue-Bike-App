@@ -10,8 +10,8 @@
 //
 import 'package:dio/dio.dart';
 
-Future<Response> fetchInfo(String url) async {
-  Response retVal;
+Future<Response>? fetchInfo(String url) async {
+  Response? retVal;
   final response = await Dio().get(url);
 
   // if call was successful

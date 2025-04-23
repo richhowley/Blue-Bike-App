@@ -4,18 +4,17 @@
 
  */
 
-
 import 'package:blue_bikes/services.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_picker/Picker.dart';
+import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
 import 'config_settings.dart';
 import 'filtered_stations.dart';
 
+//ignore: must_be_immutable
 class MoreSettingsScreen extends StatefulWidget {
-  ConfigSettings config;
+  ConfigSettings config = ConfigSettings(null);
 
   MoreSettingsScreen(config) {
     this.config = config;
@@ -31,7 +30,7 @@ class MoreSettingsScreen extends StatefulWidget {
 //  and update availabe bike and dock counts on timer
 //
 class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
-  ConfigSettings _config;
+  ConfigSettings _config = ConfigSettings(null);
 
   _MoreSettingsScreenState(config) {
     _config = config;
@@ -74,7 +73,8 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                           child: SwitchListTile(
                               title: const Text('Sort by distance'),
                               value: _config.sortByDist,
-                              onChanged: (snapshot.hasData && snapshot.data)
+                              activeColor: Colors.blue,
+                              onChanged: (snapshot.hasData && snapshot.data!)
                                   ? (bool value) {
                                       setState(() {
                                         // set value in config
@@ -96,16 +96,20 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                         // manual sort button
 
                         // re-sort list based on distance
-                        FlatButton(
-                          color: Colors.blue,
-                          textColor: Colors.white,
-                          disabledColor: Colors.grey,
-                          disabledTextColor: Colors.black,
-                          padding: EdgeInsets.all(8.0),
-                          splashColor: Colors.blueAccent,
+                        TextButton(
+                          //disabledTextColor: Colors.black
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white, backgroundColor: Colors.blue,
+                            disabledForegroundColor: Colors.grey,
+                            padding: EdgeInsets.all(8.0),
+                            textStyle: TextStyle(
+                              color: Colors.white,
+
+                              )
+                          ),
+
                           onPressed: (_config.sortByDist &&
-                                  snapshot.hasData &&
-                                  snapshot.data)
+                                  snapshot.hasData )// && snapshot.data!)
                               ? () {
                                   Provider.of<FilteredStations>(context,
                                           listen: false)
@@ -125,11 +129,11 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                               Expanded(
                                 // auto sort update on/off
                                 child: SwitchListTile(
+                                    activeColor: Colors.blue,
                                     title: const Text('Auto Update'),
-                                    value: _config.autoSortUpdate,
+                                    value:_config.autoSortUpdate,
                                     onChanged: (_config.sortByDist &&
-                                            snapshot.hasData &&
-                                            snapshot.data)
+                                            snapshot.hasData )// && snapshot.data!)
                                         ? (bool val) {
                                             setState(() {
                                               _config.autoSortUpdate = val;
@@ -155,51 +159,30 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                                         : Colors.grey,
                                     fontSize: 18.0,
                                     fontWeight: FontWeight.normal),
-                              )),
+                              )
+                              ),
                             ],
                           ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              // set frequency of sort by distance button
-                              FlatButton(
-                                color: Colors.blue,
-                                textColor: Colors.white,
-                                disabledColor: Colors.grey,
-                                disabledTextColor: Colors.black,
-                                padding: EdgeInsets.all(8.0),
-                                splashColor: Colors.blueAccent,
-                                onPressed: (_config.sortByDist &&
-                                        _config.autoSortUpdate)
-                                    ? () {
 
-                                  // set sort frequency picker
-                                        Picker(
-                                            confirmText : 'Set',
-                                            height: 125.0,
-                                            adapter: NumberPickerAdapter(data: [
-                                              NumberPickerColumn(
-                                                  begin: 1, end: 5)
-                                            ]),
-                                            hideHeader: true,
-                                            title: new Text(
-                                                "Set minutes between updates",
-                                                textAlign: TextAlign.center,
-                                            ),
-                                            onConfirm:
-                                                (Picker picker, List value) {
-                                              // value chosen,
-                                              setState(() {
-                                                // set update frequency slected
-                                                _config.updateSortFreq =
-                                                    picker.getSelectedValues()[0] * 60;
-                                              });
-                                            }).showDialog(context);
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Visibility(
+                                  visible: _config.autoSortUpdate,
+                                  child: NumberPicker(
+                                      value:  _config.updateSortFreq ~/ 60,
+                                      minValue: 1,
+                                      maxValue: 5,
+                                      axis: Axis.horizontal,
+                                      onChanged:
+                                          (value) {
+                                        setState(() {
+
+                                          // set update frequency slected
+                                          _config.updateSortFreq = value * 60;
+                                        });
                                       }
-                                    : null,
-                                child: Text(
-                                  "Set Update Frequency",
-                                  style: TextStyle(fontSize: 16.0),
+                                  ),
                                 ),
                               ),
                             ],
@@ -237,10 +220,11 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SwitchListTile(
+                            activeColor: Colors.blue,
                             title: const Text(
                                 'Auto Update Available Bikes and Docks'),
                             value: _config.autoAvailableUpdate,
-                            onChanged: (snapshot.hasData && snapshot.data)
+                            onChanged: (snapshot.hasData )// && snapshot.data!)
                                 ? (bool val) {
                               setState(() {
                                 _config.autoAvailableUpdate = val;
@@ -250,6 +234,29 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                       ),
                     ),
                   ],
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Visibility(
+                          visible: _config.autoAvailableUpdate,
+                          child: NumberPicker(
+                              value:  _config.updateAvailableFreq ~/ 60,
+                              minValue: 1,
+                              maxValue: 5,
+                              axis: Axis.horizontal,
+                              onChanged:
+                                  (value) {
+                                setState(() {
+
+                                  // set update frequency slected
+                                  _config.updateAvailableFreq = value * 60;
+                                });
+                              }
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   Row(
                     children: <Widget>[
@@ -270,48 +277,7 @@ class _MoreSettingsScreenState extends State<MoreSettingsScreen> {
                           )),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      // set how often available bikes and docks are updated
-                      FlatButton(
-                        color: Colors.blue,
-                        textColor: Colors.white,
-                        disabledColor: Colors.grey,
-                        disabledTextColor: Colors.black,
-                        padding: EdgeInsets.all(8.0),
-                        splashColor: Colors.blueAccent,
-                        onPressed: _config.autoAvailableUpdate
-                            ? () {
-                          // set update available picker
-                          new Picker(
-                              confirmText : 'Set',
-                              height: 125.0,
-                              adapter: NumberPickerAdapter(data: [
-                                NumberPickerColumn(begin: 2, end: 5)
-                              ]),
-                              hideHeader: true,
-                              title: new Text(
-                                  "Set minutes between updates",
-                                  textAlign: TextAlign.center),
-                              onConfirm: (Picker picker, List value) {
-                                // value chosen,
-                                setState(() {
-                                  // set update frequency slected
-                                  _config.updateAvailableFreq =
-                                      picker.getSelectedValues()[0] *
-                                          60;
-                                });
-                              }).showDialog(context);
-                        }
-                            : null,
-                        child: Text(
-                          "Set Update Frequency",
-                          style: TextStyle(fontSize: 16.0),
-                        ),
-                      ),
-                    ],
-                  )
+
                 ]
                 ),
               ),

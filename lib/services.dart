@@ -12,7 +12,7 @@ import 'package:geolocator/geolocator.dart';
 Future<bool> getLocationService(BuildContext context) async {
   bool _status;
 
-  _status  = await Geolocator().isLocationServiceEnabled ();
+  _status  = await Geolocator.isLocationServiceEnabled ();
 
   return _status;
 }
