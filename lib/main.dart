@@ -15,12 +15,13 @@
 
 import 'package:blue_bikes/filtered_stations.dart';
 import 'package:blue_bikes/system_regions.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'bike_station_list.dart';
 import 'config_settings.dart';
 
-ConfigSettings? _config; // configuration settings stored on device
+ConfigSettings _config; // configuration settings stored on device
 
 void main() {
   runApp(
@@ -38,15 +39,13 @@ void main() {
 
 // app home screen
 class HomePage extends StatelessWidget {
-  HomePage({Key? key, required this.title}) : super(key: key);
+  HomePage({Key key, this.title}) : super(key: key);
   final String title;
-  final BikeStationList homeBuilder = BikeStationList(_config) ;
+  final BikeStationList homeBuilder = BikeStationList(_config);
   @override
   Widget build(BuildContext context) {
     return homeBuilder;
-
-}
-
+  }
 }
 
 // main widget for runApp()

@@ -8,31 +8,31 @@ import 'dart:async';
 import 'package:blue_bikes/settings.dart';
 import 'package:blue_bikes/system_regions.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_calls.dart';
 import 'config_settings.dart';
 import 'filtered_stations.dart';
+import 'main.dart';
 
-//ignore: must_be_immutable
 class BikeStationList extends StatefulWidget {
 
-  ConfigSettings _config = ConfigSettings(null);
+  ConfigSettings _config;
 
-  BikeStationList(ConfigSettings? config) { if( config != null ) this._config = config; }
+  BikeStationList(ConfigSettings config) { this._config = config; }
 
   @override
-  _BikeStationListState createState() =>
-      _BikeStationListState(this._config);
+  _BikeStationListState createState() => _BikeStationListState(this._config);
 }
 
 class _BikeStationListState extends State<BikeStationList>
 {
-  Timer? _updateTimer;       // timer for updating available bikes/docks
-  Timer? _sortTimer;         //te timer for sorting by distance from device
-  List _feeds=[];              // urls for auto discovery
-  ConfigSettings _config = new ConfigSettings(null);  // configureation settings stored on device
+  Timer _updateTimer;       // timer for updating available bikes/docks
+  Timer _sortTimer;         // timer for sorting by distance from device
+  List _feeds;              // urls for auto discovery
+  ConfigSettings _config;   // configureation settings stored on device
 
   _BikeStationListState(ConfigSettings config) { _config = config; }
 
@@ -43,15 +43,11 @@ class _BikeStationListState extends State<BikeStationList>
   Future<void> _getStationStatus() async {
 
     final String url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
-    final Response? statusData = await fetchInfo(url);
+    final Response statusData = await fetchInfo(url);
 
     // update interface
-    if( statusData != null )
-    {
-      Provider.of<FilteredStations>(context, listen: false).
-        bikeStatusUpdated( new List.from(statusData.data['data']['stations']) );
-
-    } // if
+    Provider.of<FilteredStations>(context).
+      bikeStatusUpdated( new List.from(statusData.data['data']['stations']));
 
   }
 
@@ -69,14 +65,14 @@ class _BikeStationListState extends State<BikeStationList>
     {
       // confirm update message
       final snackBar = SnackBar(content: Text('Bike and dock info updated'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      Scaffold.of(context).showSnackBar(snackBar);
 
     } // if
 
   }
 
 
-  Future<List> _sList = Future.value([]);
+  Future<List> _sList = Future.value(null);
 
   // getStations
   //
@@ -92,33 +88,20 @@ class _BikeStationListState extends State<BikeStationList>
     List _allRegions;   // all regions
 
     // get system information feeds
-    final Response? feedData = await fetchInfo(url);
-    if( feedData == null )
-    {
-        _feeds = List.empty();
+    final Response feedData = await fetchInfo(url);
+    _feeds = new List.from(feedData.data['data']['en']['feeds']);
 
-    } else {
-        _feeds = new List.from(feedData.data['data']['en']['feeds']);
-        
-    } // else
     // use system region url to get region codes
     url = _feeds.where((f) => f['name'] == 'system_regions').toList()[0]['url'];
-    final Response? regionData = await fetchInfo(url);
-
-    if( regionData == null )
-      {
-        _allRegions = List.empty();
-
-      } else {
-        _allRegions = new List.from(regionData.data['data']['regions']);
-      } // else
+    final Response regionData = await fetchInfo(url);
+    _allRegions = new List.from(regionData.data['data']['regions']);
 
     // get current status for each station
     await _getStationStatus();
 
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
-    final Response? stationData = await fetchInfo(url);
+    final Response stationData = await fetchInfo(url);
 
     // if system information call was successful
     if( stationData != null ) {
@@ -141,9 +124,11 @@ class _BikeStationListState extends State<BikeStationList>
       List<String> _savedRegionFilter = _config.regionFilter;
 
       // restore saved region filter
-      Provider.of<FilteredStations>(context, listen: false).regionsFilter =
-          _savedRegionFilter;
-    
+      if( _savedRegionFilter != null ) {
+        Provider.of<FilteredStations>(context, listen: false).regionsFilter =
+            _savedRegionFilter;
+      }
+
       Set _validRegions = Set();  // regions with bikes
 
       // make set containing only regions with bikes
@@ -314,7 +299,7 @@ class _BikeStationListState extends State<BikeStationList>
 
     return
       FutureBuilder<List>(
-        future: _sList ,
+        future: _sList,
         builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
           List<Widget> bikeList;
 
@@ -394,9 +379,7 @@ class _BikeStationListState extends State<BikeStationList>
             // waiting for data
             bikeList = <Widget>[
               SizedBox(
-                child: CircularProgressIndicator(
-                  valueColor:AlwaysStoppedAnimation<Color>(Colors.blue),
-                ),
+                child: CircularProgressIndicator(),
                 width: 60,
                 height: 60,
               ),

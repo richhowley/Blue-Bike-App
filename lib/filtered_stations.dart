@@ -6,14 +6,15 @@
     bikes and docks for each station.
 
  */
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong/latlong.dart';
 
 class FilteredStations with ChangeNotifier {
-  List? _fullBikeList;         // complete list of installed stations read from server
-  List? _bikeList;             // list with filter applied
-  List? _regionsFilter;        // IDs of regions to display
+  List _fullBikeList;         // complete list of installed stations read from server
+  List _bikeList;             // list with filter applied
+  List _regionsFilter;        // IDs of regions to display
   Map _availableBikes = Map(); // available bike count keyed by station id
 
   // getters
@@ -33,8 +34,8 @@ class FilteredStations with ChangeNotifier {
 
   // set bikelist to only stations in selected regions
   void _filterBikes() {
-    _bikeList = _fullBikeList!.where((f) =>
-    _regionsFilter!.indexOf(f['region_id'].toString()) != (-1))
+    _bikeList = _fullBikeList.where((f) =>
+    _regionsFilter.indexOf(f['region_id'].toString()) != (-1))
         .toList();
 
   }
@@ -103,9 +104,7 @@ class FilteredStations with ChangeNotifier {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children:
                 <Widget>[
-                  CircularProgressIndicator(
-                    valueColor:AlwaysStoppedAnimation<Color>(Colors.blue),
-                  )
+                  CircularProgressIndicator()
                 ]
             ),
 
@@ -116,24 +115,24 @@ class FilteredStations with ChangeNotifier {
     } // if
 
     // get device location
-    final permission = await Geolocator.requestPermission();
-    final Position position = await Geolocator.getCurrentPosition();
+    final Position position = await Geolocator().getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
-    final Distance distance = new Distance();
-    final LatLng loc = new LatLng(position.latitude, position.longitude);
+    if( position != null ) {
+      final Distance distance = new Distance();
+      final LatLng loc = new LatLng(position.latitude, position.longitude);
 
-    // sort by distance
-    _fullBikeList!.sort((a, b) =>
-        distance(loc, new LatLng(a['lat'], a['lon'])).compareTo(
-            distance(loc, new LatLng(b['lat'], b['lon']))));
+      // sort by distance
+      _fullBikeList.sort((a, b) =>
+          distance(loc, new LatLng(a['lat'], a['lon'])).compareTo(
+              distance(loc, new LatLng(b['lat'], b['lon']))));
 
-    // filter and update
-    _bikeListUpdated();
+      // filter and update
+      _bikeListUpdated();
 
-    // remove modal
-    if( !quitet ) Navigator.pop(context);
+      // remove modal
+      if( !quitet ) Navigator.pop(context);
 
-  // if
+    } // if
 
     return(position);
   }
@@ -143,7 +142,7 @@ class FilteredStations with ChangeNotifier {
   // Call to sort list of bikes, pass true to
   // sort based on distance from device
   //
-  void sortBikeList(BuildContext context, bool sortByDist, {bool quiet = true}) {
+  void sortBikeList(BuildContext context, bool sortByDist, {bool quiet: true}) {
 
     // sort full list
     if( sortByDist ) {
@@ -154,7 +153,7 @@ class FilteredStations with ChangeNotifier {
     } else {
 
       // sort by alpha
-      _fullBikeList!.sort((a, b) => a['name'].compareTo(b['name']));
+      _fullBikeList.sort((a, b) => a['name'].compareTo(b['name']));
 
       // filter and update
       _bikeListUpdated();

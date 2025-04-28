@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ConfigSettings  {
 
+  SharedPreferences _prefs;
+
   // settings with defaults
   Map _configSettings = {
     'sortByDist': false,              // auto sort by distance from device on/off
@@ -15,9 +17,6 @@ class ConfigSettings  {
     "updateAvailableFreq" : 300,      // auto update interval
     "regionFilter" : []               // only list regions in filter (null if no filter)
   };
-
-  late SharedPreferences _prefs;
-
 
   // save a single setting of _configSettings
   void _writeSetting(key) async {
@@ -79,36 +78,31 @@ class ConfigSettings  {
   // Getters and setters for config settings
 
   set regionFilter(List<String>filter) {_setConfigVal('regionFilter', filter);}
-  List<String> get regionFilter { return _configSettings['regionFilter'] ?? []; }
+  get regionFilter { return _configSettings['regionFilter']; }
 
   set sortByDist(bool val) {_setConfigVal('sortByDist', val);}
-  bool get sortByDist { return _configSettings['sortByDist']; }
+  get sortByDist { return _configSettings['sortByDist']; }
 
   set autoSortUpdate(bool val) {_setConfigVal('autoSortUpdate', val);}
-  bool get autoSortUpdate { return _configSettings['autoSortUpdate']; }
+  get autoSortUpdate { return _configSettings['autoSortUpdate']; }
 
   set updateSortFreq(int val) {_setConfigVal('updateSortFreq', val);}
-  int get updateSortFreq { return _configSettings['updateSortFreq']; }
+  get updateSortFreq { return _configSettings['updateSortFreq']; }
 
   set autoAvailableUpdate(bool val) {_setConfigVal('autoAvailableUpdate', val);}
-  bool get autoAvailableUpdate { return _configSettings['autoAvailableUpdate']; }
+  get autoAvailableUpdate { return _configSettings['autoAvailableUpdate']; }
 
   set updateAvailableFreq(int val) {_setConfigVal('updateAvailableFreq', val);}
-  int get updateAvailableFreq { return _configSettings['updateAvailableFreq']; }
+  get updateAvailableFreq { return _configSettings['updateAvailableFreq']; }
 
-  ConfigSettings(SharedPreferences? prefs)
+  ConfigSettings(SharedPreferences prefs)
   {
-    if( prefs != null)
-      {
-        // save shared prefs
-        _prefs = prefs;
+    // save shared prefs
+    _prefs = prefs;
 
-        // read all config settings
-        _configSettings.forEach((k,v) => _readSetting(k));
-
-      }
-    }
-
+    // read all config settings
+    _configSettings.forEach((k,v) => _readSetting(k));
 
   }
 
+}
