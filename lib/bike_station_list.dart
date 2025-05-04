@@ -8,31 +8,31 @@ import 'dart:async';
 import 'package:blue_bikes/settings.dart';
 import 'package:blue_bikes/system_regions.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_calls.dart';
 import 'config_settings.dart';
 import 'filtered_stations.dart';
-import 'main.dart';
 
+//ignore: must_be_immutable
 class BikeStationList extends StatefulWidget {
 
-  ConfigSettings _config;
+  ConfigSettings _config = ConfigSettings(null);
 
-  BikeStationList(ConfigSettings config) { this._config = config; }
+  BikeStationList(ConfigSettings? config) { if( config != null ) this._config = config; }
 
   @override
-  _BikeStationListState createState() => _BikeStationListState(this._config);
+  _BikeStationListState createState() =>
+      _BikeStationListState(this._config);
 }
 
 class _BikeStationListState extends State<BikeStationList>
 {
-  Timer _updateTimer;       // timer for updating available bikes/docks
-  Timer _sortTimer;         // timer for sorting by distance from device
-  List _feeds;              // urls for auto discovery
-  ConfigSettings _config;   // configureation settings stored on device
+  Timer? _updateTimer;       // timer for updating available bikes/docks
+  Timer? _sortTimer;         //te timer for sorting by distance from device
+  List _feeds=[];              // urls for auto discovery
+  ConfigSettings _config = new ConfigSettings(null);  // configureation settings stored on device
 
   _BikeStationListState(ConfigSettings config) { _config = config; }
 
@@ -43,11 +43,15 @@ class _BikeStationListState extends State<BikeStationList>
   Future<void> _getStationStatus() async {
 
     final String url = _feeds.where((f) => f['name'] == 'station_status').toList()[0]['url'];
-    final Response statusData = await fetchInfo(url);
+    final Response? statusData = await fetchInfo(url);
 
     // update interface
-    Provider.of<FilteredStations>(context).
-      bikeStatusUpdated( new List.from(statusData.data['data']['stations']));
+    if( statusData != null )
+    {
+      Provider.of<FilteredStations>(context, listen: false).
+      bikeStatusUpdated( new List.from(statusData.data['data']['stations']) );
+
+    } // if
 
   }
 
@@ -65,14 +69,14 @@ class _BikeStationListState extends State<BikeStationList>
     {
       // confirm update message
       final snackBar = SnackBar(content: Text('Bike and dock info updated'));
-      Scaffold.of(context).showSnackBar(snackBar);
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     } // if
 
   }
 
 
-  Future<List> _sList = Future.value(null);
+  Future<List> _sList = Future.value([]);
 
   // getStations
   //
@@ -88,20 +92,33 @@ class _BikeStationListState extends State<BikeStationList>
     List _allRegions;   // all regions
 
     // get system information feeds
-    final Response feedData = await fetchInfo(url);
-    _feeds = new List.from(feedData.data['data']['en']['feeds']);
+    final Response? feedData = await fetchInfo(url);
+    if( feedData == null )
+    {
+      _feeds = List.empty();
 
+    } else {
+      _feeds = new List.from(feedData.data['data']['en']['feeds']);
+
+    } // else
     // use system region url to get region codes
     url = _feeds.where((f) => f['name'] == 'system_regions').toList()[0]['url'];
-    final Response regionData = await fetchInfo(url);
-    _allRegions = new List.from(regionData.data['data']['regions']);
+    final Response? regionData = await fetchInfo(url);
+
+    if( regionData == null )
+    {
+      _allRegions = List.empty();
+
+    } else {
+      _allRegions = new List.from(regionData.data['data']['regions']);
+    } // else
 
     // get current status for each station
     await _getStationStatus();
 
     // use system information url to get info on stations
     url = _feeds.where((f) => f['name'] == 'station_information').toList()[0]['url'];
-    final Response stationData = await fetchInfo(url);
+    final Response? stationData = await fetchInfo(url);
 
     // if system information call was successful
     if( stationData != null ) {
@@ -114,20 +131,18 @@ class _BikeStationListState extends State<BikeStationList>
 
       // create preferences class
       SharedPreferences _prefs = await SharedPreferences.getInstance();
-        _config = ConfigSettings(_prefs);
+      _config = ConfigSettings(_prefs);
 
       // sort bike list
       Provider.of<FilteredStations>(context, listen: false).
-        sortBikeList(context, _config.sortByDist, quiet: false);
+      sortBikeList(context, _config.sortByDist, quiet: false);
 
       // read saved region filter
       List<String> _savedRegionFilter = _config.regionFilter;
 
       // restore saved region filter
-      if( _savedRegionFilter != null ) {
-        Provider.of<FilteredStations>(context, listen: false).regionsFilter =
-            _savedRegionFilter;
-      }
+      Provider.of<FilteredStations>(context, listen: false).regionsFilter =
+          _savedRegionFilter;
 
       Set _validRegions = Set();  // regions with bikes
 
@@ -223,7 +238,7 @@ class _BikeStationListState extends State<BikeStationList>
               // available docks
               Text(
                 Provider.of<FilteredStations>(context, listen: false).
-                  availableBikes[station['station_id']]['num_docks_available'].toString(),
+                availableBikes[station['station_id']]['num_docks_available'].toString(),
                 style:
                 TextStyle(
                     fontSize: 18.0, color:Colors.blueGrey
@@ -237,24 +252,24 @@ class _BikeStationListState extends State<BikeStationList>
 
     // tiles for each bike station
     final tileLayout =
-      Container (
-          decoration: BoxDecoration(
-            border: Border(
-              // color code
-                left: BorderSide( //                   <--- left side
-                  color:  Provider.of<SystemRegions>(context, listen: false).getColorCode(station['region_id'].toString()),
-                  width: 5.0,
-                )
-            ),
+    Container (
+        decoration: BoxDecoration(
+          border: Border(
+            // color code
+              left: BorderSide( //                   <--- left side
+                color:  Provider.of<SystemRegions>(context, listen: false).getColorCode(station['region_id'].toString()),
+                width: 5.0,
+              )
           ),
-          child:
-          Row (
-            children: <Widget>[
-              Expanded(flex: 8, child: leftColumn),
-              Expanded(flex: 2, child: rightColumn)
-            ],
-          )
-      );
+        ),
+        child:
+        Row (
+          children: <Widget>[
+            Expanded(flex: 8, child: leftColumn),
+            Expanded(flex: 2, child: rightColumn)
+          ],
+        )
+    );
 
 
     return tileLayout;
@@ -299,7 +314,7 @@ class _BikeStationListState extends State<BikeStationList>
 
     return
       FutureBuilder<List>(
-        future: _sList,
+        future: _sList ,
         builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
           List<Widget> bikeList;
 
@@ -335,7 +350,7 @@ class _BikeStationListState extends State<BikeStationList>
 
               // create timer
               _updateTimer = Timer.periodic(Duration(seconds:
-                _config.updateAvailableFreq), (timer) {
+              _config.updateAvailableFreq), (timer) {
 
                 // if we still want auto upates
                 if (_config.autoAvailableUpdate) {
@@ -379,7 +394,9 @@ class _BikeStationListState extends State<BikeStationList>
             // waiting for data
             bikeList = <Widget>[
               SizedBox(
-                child: CircularProgressIndicator(),
+                child: CircularProgressIndicator(
+                  valueColor:AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
                 width: 60,
                 height: 60,
               ),
